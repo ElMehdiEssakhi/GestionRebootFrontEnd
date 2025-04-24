@@ -40,3 +40,6 @@ ng serve
     - src/app/services/api.service.ts
 
     - src/app/services/auth.service.ts
+
+- TailwindCSS is already configured — it will work automatically after `npm install`.
+
