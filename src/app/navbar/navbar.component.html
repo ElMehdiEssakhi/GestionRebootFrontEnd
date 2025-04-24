@@ -1,0 +1,26 @@
+<nav class="bg-white p-4 shadow-md">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex items-center justify-between">
+      <!-- App Name or Logo -->
+      <div class="flex items-center space-x-2">
+        <lucide-icon [name]="RefreshCw" class="w-6 h-6 text-gray-800"></lucide-icon>
+        <div class="text-gray-800 text-2xl font-bold tracking-tight">
+          Reboot Management
+        </div>
+      </div>
+      
+      <!-- Welcome Message and Logout -->
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-2">
+          <lucide-icon [name]="UserCircle" class="w-6 h-6 text-gray-600"></lucide-icon>
+          <span class="text-gray-600">Welcome, {{ user }}!</span>
+        </div>
+        <button (click)="logout()" class="text-gray-600 hover:text-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center space-x-2 cursor-pointer">
+          <lucide-icon [name]="LogOut" class="w-4 h-4"></lucide-icon>
+          <span>Logout</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+  
