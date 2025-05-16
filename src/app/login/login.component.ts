@@ -11,7 +11,7 @@ import { AuthService } from '../services/auth.service';
 })
 export class LoginComponent {
   title = 'rebootFront';
-  email = '';
+  user = '';
   password = '';
   isLoading = false;
   error= '';
@@ -21,7 +21,7 @@ export class LoginComponent {
   
   handleSubmit() {
     this.isLoading = true;
-    this.auth.login(this.email, this.password).subscribe({
+    this.auth.login(this.user, this.password).subscribe({
       next: () => {
         const role = this.auth.getRole();
         this.isLoading = false;

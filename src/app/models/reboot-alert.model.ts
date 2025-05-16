@@ -1,9 +1,9 @@
 export interface RebootAlert {
   id: number;
   machineName: string;
-  zoneId: string;
-  postponedTime: string;
-  status: 'manual' | 'rebooted' | 'postponed';
-  manualRebootTime?: string;
+  site: string;
+  rebootPostponedAt: string;
+  status: string;
+  rebootedAt?: string;
   rebootedBy?: string;
 }

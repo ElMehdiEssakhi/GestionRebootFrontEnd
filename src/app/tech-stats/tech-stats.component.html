@@ -1,0 +1,145 @@
+<app-navbar></app-navbar>
+<div class="min-h-screen bg-gray-50 p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-gray-900">Technician Performance Analytics</h1>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Total Reboots -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500">Total Reboots</p>
+            <p class="text-2xl font-semibold text-gray-900">{{totalReboots}}</p>
+          </div>
+          <div class="p-3 bg-purple-100 rounded-lg">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+        </div>
+        <div class="mt-4">
+        </div>
+      </div>
+      
+
+      <!-- Active Technicians -->
+      <div class="bg-white rounded-xl shadow-sm p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-500">Technicians</p>
+            <p class="text-2xl font-semibold text-gray-900">{{activeTechs}}</p>
+          </div>
+          <div class="p-3 bg-yellow-100 rounded-lg">
+            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+        </div>
+        <div class="mt-4">
+        </div>
+      </div>
+    </div>
+
+    <!-- Technician Management Card -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Manage Technicians</h3>
+      <div class="space-y-4">
+        <!-- Add New Technician Form -->
+        <div class="flex items-center space-x-4">
+          <div class="flex-1">
+            <input type="text" 
+                    placeholder="Technician Name" 
+                    [(ngModel)]="newTechName" 
+                    class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+          </div>
+          <button (click)="addTechnician()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors" [disabled]="!newTechName || isAddingTech">
+            Add Technician
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Success Message -->
+    <div *ngIf="showTechSuccessMessage" class="mb-4 p-3 bg-green-100 text-green-800 rounded-lg flex items-center">
+      <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      Technician added successfully!
+    </div>
+    
+    <!-- Error Message -->
+    <div *ngIf="showTechErrorMessage" class="mb-4 p-3 bg-red-100 text-red-800 rounded-lg flex items-center">
+      <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      {{ techErrorMessage }}
+    </div>
+
+    <!-- First Row: Top Technicians -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Top Technicians</h3>
+      <!-- Search Bar -->
+      <div class="mb-4">
+        <input type="text" 
+                [(ngModel)]="searchTerm"
+                (ngModelChange)="filterMachines()"
+                placeholder="Search by technician name..." 
+                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+      </div>
+      <div class="h-[400px] overflow-y-auto">
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="flex justify-center items-center h-full">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="!isLoading && topTechnicians.length === 0" class="flex justify-center items-center h-full">
+          <p class="text-gray-500">No technician data available</p>
+        </div>
+
+        <!-- Technicians List -->
+        <div *ngFor="let tech of filteredTechs; let i = index" 
+             class="flex items-center justify-between p-4 border-b border-gray-100 last:border-0"
+             [ngClass]="{'bg-purple-50': i === 0, 'hover:bg-gray-50': i !== 0}">
+          <div class="flex items-center space-x-4">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center"
+                 [ngClass]="{'bg-purple-100': i === 0, 'bg-gray-100': i !== 0}">
+              <span [ngClass]="{'text-purple-600': i === 0, 'text-gray-600': i !== 0}"
+                    class="font-semibold text-lg">{{i + 1}}</span>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900 text-lg">{{tech.name}}</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <div class="text-right">
+              <p class="text-sm text-gray-500">Reboots</p>
+              <p [ngClass]="{'text-purple-600': i === 0, 'text-gray-900': i !== 0}"
+                 class="text-lg font-semibold">{{tech.rebootCount}}</p>
+            </div>
+            <button (click)="showDeleteOption(tech)" 
+                    class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+            <div *ngIf="showDeleteFor === tech.id" class="flex items-center space-x-2">
+              <button (click)="deleteTechnician(tech)" 
+                      class="px-3 py-1 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-colors">
+                Confirm Delete
+              </button>
+              <button (click)="showDeleteFor = null" 
+                      class="px-3 py-1 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

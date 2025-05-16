@@ -1,56 +1,43 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs/operators';
-
-interface LoginResponse {
-  token: string;
-  user: {
-    id: string;
-    name: string;
-    role: 'manager' | 'technician';
-    zoneIds?: string[]; // Only for technician
-  };
-}
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private apiUrl = 'http://localhost:8080/api/auth';
+  private apiUrl = 'http://192.168.0.26:8080';
+  private currentUserSubject = new BehaviorSubject<string>('');
+  currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
-  login(email: string, password: string) {
+  login(username: string, password: string) {
     return this.http.post<any>(
-      `${this.apiUrl}/login`,
-      { email, password }
+      `${this.apiUrl}/api/auth/login`,
+      { username, password }
     ).pipe(
       tap((res) => {
         localStorage.setItem('role', res.role);
-        localStorage.setItem('zone', res.zone);
-        localStorage.setItem('username',res.name);
-        localStorage.setItem('email',res.email);
       })
     );
   }
-
   logout(): void {
     localStorage.removeItem('role');
-    localStorage.removeItem('zone');
+    this.currentUserSubject.next('');
   }
 
-  getRole(): 'manager' | 'technician' | null {
-    return localStorage.getItem('role') as 'manager' | 'technician' | null;
+  getRole(): String{
+    return localStorage.getItem('role') || '';
   }
 
-  getZone(): String {
-    return localStorage.getItem('zone') || '';
+  setCurrentUser(user: string) {
+    this.currentUserSubject.next(user);
   }
 
-  getUserNAme():String {
-    return localStorage.getItem('username') || '';
+  getCurrentUser(): string {
+    return this.currentUserSubject.value;
   }
-  getEmail():String {
-    return localStorage.getItem('email') || '';
-  }
+
 }

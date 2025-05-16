@@ -6,9 +6,41 @@
   <div class="max-w-7xl mx-auto space-y-8 relative">
     <div class="flex items-center justify-between">
       <h1 class="text-4xl font-bold text-gray-900 tracking-tight">Technician Dashboard</h1>
-      <span class="text-sm bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-2 rounded-lg shadow-md transform hover:scale-105 transition-transform duration-200">
-        {{ user }}
-      </span>
+      <!--<div class="relative">
+        <div class="flex items-center">
+          <input
+            type="text"
+            [(ngModel)]="userSearchTerm"
+            (input)="filterUsers()"
+            [placeholder]="user || 'Search user...'"
+            class="w-64 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out"
+          />
+          <button 
+            (click)="toggleUserDropdown()"
+            class="ml-2 p-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+        
+         Dropdown Menu 
+        <div 
+          *ngIf="showUserDropdown" 
+          class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 max-h-60 overflow-y-auto z-50"
+        >
+          <div class="py-1">
+            <div 
+              *ngFor="let user of filteredUsers" 
+              (click)="selectUser(user)"
+              class="px-4 py-2 hover:bg-purple-50 cursor-pointer transition duration-150 ease-in-out"
+            >
+              {{ user }}
+            </div>
+          </div>
+        </div> 
+      </div>-->
     </div>
 
     <div class="bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl p-8 space-y-8 border border-gray-100">
@@ -25,10 +57,19 @@
             <input
               type="text"
               [(ngModel)]="searchTerm"
+              (ngModelChange)="applyFilters()"
               placeholder="Search by machine name..."
               class="w-full border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out placeholder-gray-300"
             />
           </div>
+        </div>
+        <div class="w-full md:w-1/4">
+          <label class="text-sm font-medium mb-2 text-gray-700 block">Filter by Site</label>
+          <select [(ngModel)]="siteFilter" (change)="onSiteChange()" 
+            class="w-full px-4 py-3 border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out">
+            <option value="">Select Site</option>
+            <option *ngFor="let site of sites" [value]="site">{{ site }}</option>
+          </select>
         </div>
       </div>
 
@@ -43,25 +84,19 @@
                   {{ sortDirection === 'asc' ? '↑' : '↓' }}
                 </span>
               </th>
-              <th class="px-6 py-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition duration-150" (click)="toggleSort('zoneId')">
-                Zone ID
-                <span *ngIf="sortField === 'zoneId'" class="ml-1">
-                  {{ sortDirection === 'asc' ? '↑' : '↓' }}
-                </span>
+              <th class="px-6 py-4 font-semibold text-gray-700">
+                Site
               </th>
               <th class="px-6 py-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition duration-150" (click)="toggleSort('postponedTime')">
-                Scheduled Time
+                Reboot postponed At
                 <span *ngIf="sortField === 'postponedTime'" class="ml-1">
                   {{ sortDirection === 'asc' ? '↑' : '↓' }}
                 </span>
               </th>
-              <th class="px-6 py-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 transition duration-150" (click)="toggleSort('status')">
+              <th class="px-6 py-4 font-semibold text-gray-700">
                 Status
-                <span *ngIf="sortField === 'status'" class="ml-1">
-                  {{ sortDirection === 'asc' ? '↑' : '↓' }}
-                </span>
               </th>
-              <th class="px-6 py-4 font-semibold text-gray-700">Mark as Rebooted</th>
+              <th class="px-6 py-4 font-semibold text-gray-700">Mark as rebooted</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
@@ -69,9 +104,9 @@
               <td colspan="5" class="text-center h-32 text-gray-500">
                 <div class="flex flex-col items-center justify-center">
                   <svg class="h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p>No alerts match your filters</p>
+                  <p>No pending alerts at current site</p>
                 </div>
               </td>
             </tr>
@@ -81,42 +116,85 @@
                 [class.transform]="alert.isRemoving"
                 [class.-translate-x-full]="alert.isRemoving"
                 [class.h-0]="alert.isRemoving">
-              <td class="px-6 py-4 font-medium text-gray-900">{{ alert.machine }}</td>
-              <td class="px-6 py-4 text-gray-700">{{ alert.zoneId }}</td>
-              <td class="px-6 py-4 text-gray-700">{{ alert.postponedRebootTime | date:'medium' }}</td>
+              <td class="px-6 py-4 font-medium text-gray-900">{{ alert.machine.name }}</td>
+              <td class="px-6 py-4 text-gray-700">{{ alert.site }}</td>
+              <td class="px-6 py-4 text-gray-700">{{ alert.rebootPostponedAt | date:'medium' }}</td>
               <td class="px-6 py-4">
                 <span
                   class="px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center"
                   [ngClass]="{
-                    'bg-yellow-100 text-yellow-800': alert.status === 'manual',
-                    'bg-green-100 text-green-800': alert.status === 'rebooted',
-                    'bg-blue-100 text-blue-800': alert.status === 'postponed',
-                    'bg-gray-100 text-gray-800': alert.status !== 'manual' && alert.status !== 'rebooted' && alert.status !== 'postponed'
+                    'bg-yellow-100 text-yellow-800': alert.status === 'pending',
+                    'bg-red-100 text-red-800': alert.status === 'alert',
+                    'bg-gray-100 text-gray-800': alert.status !== 'manual' && alert.status !== 'rebooted' && alert.status !== 'pending'
                   }"
                 >
                   <span class="w-2 h-2 rounded-full mr-2"
                     [ngClass]="{
-                      'bg-yellow-400': alert.status === 'manual',
-                      'bg-green-400': alert.status === 'rebooted',
-                      'bg-blue-400': alert.status === 'postponed',
-                      'bg-gray-400': alert.status !== 'manual' && alert.status !== 'rebooted' && alert.status !== 'postponed'
+                      'bg-yellow-400': alert.status === 'pending',
+                      'bg-red-400': alert.status === 'alert',
+                      'bg-gray-400': alert.status !== 'pending' && alert.status !== 'alert' ,
                     }">
                   </span>
-                  {{ alert.status | titlecase }}
+                  <ng-container [ngSwitch]="alert.status">
+                    <span *ngSwitchCase="'pending'">Postponed since yesterday</span>
+                    <span *ngSwitchCase="'alert'">Escalated</span>
+                    <span *ngSwitchDefault>{{ alert.status | titlecase }}</span>
+                  </ng-container>
                 </span>
               </td>
               <td class="px-6 py-4 text-center">
                 <ng-container [ngSwitch]="alert.status">
-                  <input
-                    *ngSwitchCase="'postponed'"
-                    type="checkbox"
-                    [disabled]="isLoading"
-                    class="w-5 h-5 accent-purple-500 rounded border-gray-300 focus:ring-purple-500 cursor-pointer"
-                    (change)="manualReboot(alert)"
-                  />
-                  <div *ngSwitchCase="'rebooted'" class="text-xs text-green-600 flex flex-col items-center">
-                    <span class="font-medium">Completed</span>
-                    <span *ngIf="alert.manualRebootTime" class="text-gray-500">by {{ alert.user.name }}</span>
+                  <div class="flex items-center justify-center gap-3">
+                  <!-- Checkbox -->
+                  <div class="flex items-center h-full">
+                    <input
+                      type="checkbox"
+                      [checked]="selectedAlert === alert"
+                      [disabled]="isLoading"
+                      class="w-5 h-5 accent-purple-500 rounded border-gray-300 focus:ring-purple-500 cursor-pointer"
+                      (click)="toggleUserSelection(alert)"
+                    />
+                  </div>
+                  <!-- Render user dropdown for current alert -->
+                  <div *ngIf="showUserSelection && selectedAlert === alert" class="relative">
+                    <div class="relative">
+                      <div class="flex items-center">
+                        <input
+                          type="text"
+                          [(ngModel)]="userSearchTerm"
+                          (input)="filterUsers()"
+                          [placeholder]="user || 'Search user...'"
+                          class="w-64 px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out"
+                        />
+                        <button 
+                          (click)="toggleUserDropdown()"
+                          class="ml-2 p-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                        >
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        <button (click)="manualReboot(alert)" class="text-sm bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-2 rounded-lg shadow-md transform hover:scale-105 transition-transform duration-200 border-0 focus:ring-2 focus:ring-purple-300"
+                        >Mark</button>
+                      </div>
+
+                      <!-- Dropdown Menu -->
+                      <div 
+                        *ngIf="showUserDropdown" 
+                        class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 max-h-60 overflow-y-auto z-50"
+                      >
+                        <div class="py-1">
+                          <div 
+                            *ngFor="let user of filteredUsers" 
+                            (click)="selectUser(user)"
+                            class="px-4 py-2 hover:bg-purple-50 cursor-pointer transition duration-150 ease-in-out"
+                          >
+                            {{ user }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   </div>
                 </ng-container>
               </td>
@@ -138,5 +216,31 @@
 <!-- Loading Spinner -->
 <div *ngIf="isLoading" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
   <div class="h-10 w-10 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600"></div>
+</div>
+
+<!-- Notifications -->
+<div *ngIf="showNotification" 
+     class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out"
+     [class.opacity-0]="!showNotification"
+     [class.translate-y-4]="!showNotification">
+  <div class="flex items-center">
+    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+    </svg>
+    Successfully marked as rebooted
+  </div>
+</div>
+
+<!-- User Selection Warning -->
+<div *ngIf="showUserWarning" 
+     class="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out"
+     [class.opacity-0]="!showUserWarning"
+     [class.translate-y-4]="!showUserWarning">
+  <div class="flex items-center">
+    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+    </svg>
+    Please select your name before proceeding
+  </div>
 </div>
   

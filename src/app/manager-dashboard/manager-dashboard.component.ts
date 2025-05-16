@@ -5,6 +5,9 @@ import { RebootAlert } from '../models/reboot-alert.model';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { NavbarComponent } from "../navbar/navbar.component";
+import { Mars } from 'lucide-angular';
+import { forkJoin, of } from 'rxjs';
+import { Router } from '@angular/router';
 @Component({
   selector: 'app-manager-dashboard',
   imports: [FormsModule, CommonModule, NavbarComponent],
@@ -17,43 +20,71 @@ export class ManagerDashboardComponent implements OnInit {
   filteredAlerts: any[] = [];
   isLoading = true;
   searchTerm = '';
-  sortField: keyof RebootAlert = 'zoneId';
+  sortField: keyof RebootAlert = 'site';
   sortDirection: 'asc' | 'desc' = 'asc';
   statusFilter = 'all';
-  zoneFilter = 'all';
-  zones: string[] = [];
+  siteFilter = 'all';
+  sites: string[] = [];
+  dateFilter = '';
+  today = new Date();
+  days: { label: string; value: string }[] = [];
+  
+  // Add Technician Modal Properties
+  showAddTechModal = false;
+  newTechName = '';
+  isAddingTech = false;
+  showTechSuccessMessage = false;
+  showTechErrorMessage = false;
+  techErrorMessage = '';
 
-  constructor(private authService: AuthService, private apiService: ApiService) {}
+  isSidebarOpen = false;
+
+  constructor(private authService: AuthService, private apiService: ApiService, private router: Router) {}
 
   ngOnInit() {
-    this.user =this.authService.getUserNAme();
-    this.usermail = this.authService.getEmail();
-    this.apiService.getAllZones().subscribe({
-      next: (data: any[]) => {
-        this.alerts = data;
-        this.zones = [...new Set(data.map(a => a.zoneId))];
-        this.applyFilters();
-      },
-      error: (err) => console.error('Fetch error:', err),
-      complete: () => this.isLoading = false
+    const todayDate = this.today.getDate();
+    // Add "Today" first
+    this.days.push({
+      label: 'Today',
+      value: this.today.toLocaleDateString('en-CA') // 2025-04-28
     });
+    // Add previous days
+    for (let i = todayDate - 1; i >= 1; i--) {
+      const day = new Date(this.today.getFullYear(),this.today.getMonth(), i);
+      this.days.push({
+        label: i.toString(),
+        value: day.toLocaleDateString('en-CA') // 2025-04-27, 2025-04-26, ...
+      });
+    }
+    // Set default value to today's date
+    this.dateFilter = this.today.toLocaleDateString('en-CA');
+    this.getByDate();
   }
 
   applyFilters() {
     
     this.filteredAlerts = this.alerts
       .filter(alert => {
-        const matchesSearch = alert.machine.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-                              alert.zoneId.toLowerCase().includes(this.searchTerm.toLowerCase());
+        const matchesSearch = alert.machine.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                              alert.site.toLowerCase().includes(this.searchTerm.toLowerCase());
         const matchesStatus = this.statusFilter === 'all' || alert.status === this.statusFilter;
-        const matchesZone = this.zoneFilter === 'all' || alert.zoneId === this.zoneFilter;
-        return matchesSearch && matchesStatus && matchesZone;
+        const matchesSite = this.siteFilter === 'all' || alert.site === this.siteFilter;
+        return matchesSearch && matchesStatus && matchesSite;
       })
       .sort((a, b) => {
-        const fieldA = (a[this.sortField] ?? '').toString().toLowerCase();
-        const fieldB = (b[this.sortField] ?? '').toString().toLowerCase();
-        if (fieldA < fieldB) return this.sortDirection === 'asc' ? -1 : 1;
-        if (fieldA > fieldB) return this.sortDirection === 'asc' ? 1 : -1;
+        if (this.sortField === 'machineName') {
+          const nameA = a.machine.name.toLowerCase();
+          const nameB = b.machine.name.toLowerCase();
+          return this.sortDirection === 'asc' 
+            ? nameA.localeCompare(nameB) 
+            : nameB.localeCompare(nameA);
+        } else if (this.sortField === 'rebootPostponedAt') {
+          const timeA = new Date(a.rebootPostponedAt).getTime();
+          const timeB = new Date(b.rebootPostponedAt).getTime();
+          return this.sortDirection === 'asc' 
+            ? timeA - timeB 
+            : timeB - timeA;
+        }
         return 0;
       });
   }
@@ -74,10 +105,66 @@ export class ManagerDashboardComponent implements OnInit {
 
   getStatusBadgeClass(status: string): string {
     switch (status) {
-      case 'manual': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
-      case 'rebooted': return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'postponed': return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+      case 'manual': return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'auto': return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+      case 'alert': return 'bg-red-100 text-red-800 hover:bg-red-200';
       default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
     }
   }
+
+
+getByDate() {
+  this.isLoading = true;
+
+  const isToday = this.isDateToday(this.dateFilter);
+
+  const alerts$ = isToday ? this.apiService.getAlerts() : of([]); // Return empty array if not today
+  const reboots$ = this.apiService.getRebootsByDate(this.dateFilter);
+
+  forkJoin([alerts$, reboots$]).subscribe({
+    next: ([alertsData, rebootsData]: [any[], any[]]) => {
+      const combinedData = [...alertsData, ...rebootsData];
+      this.alerts = combinedData;
+      this.sites = [...new Set(combinedData.map(a => a.site))];
+      this.applyFilters();
+    },
+    error: (err) => console.error('Fetch error:', err),
+    complete: () => this.isLoading = false
+  });
+}
+
+  onDateFilterChange() {
+    this.getByDate();
+  }
+
+
+  toggleSidebar() {
+    this.isSidebarOpen = !this.isSidebarOpen;
+  }
+
+  navigateTo(destination: string) {
+    this.isSidebarOpen = false;
+    // Add navigation logic here
+    switch(destination) {
+      case 'technicians':
+        // Navigate to technicians management
+        this.router.navigate(['/techStats']);
+        break;
+      case 'machines':
+        // Navigate to machines management
+        this.router.navigate(['/machineStats']);
+        break;
+    }
+  }
+
+isDateToday(date: string | Date): boolean {
+  const today = new Date();
+  const input = new Date(date);
+  return (
+    input.getFullYear() === today.getFullYear() &&
+    input.getMonth() === today.getMonth() &&
+    input.getDate() === today.getDate()
+  );
+}
 }
