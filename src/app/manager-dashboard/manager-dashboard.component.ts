@@ -27,7 +27,7 @@ export class ManagerDashboardComponent implements OnInit {
   sites: string[] = [];
   dateFilter = '';
   today = new Date();
-  days: { label: string; value: string }[] = [];
+
   
   // Add Technician Modal Properties
   showAddTechModal = false;
@@ -42,27 +42,17 @@ export class ManagerDashboardComponent implements OnInit {
   constructor(private authService: AuthService, private apiService: ApiService, private router: Router) {}
 
   ngOnInit() {
-    const todayDate = this.today.getDate();
-    // Add "Today" first
-    this.days.push({
-      label: 'Today',
-      value: this.today.toLocaleDateString('en-CA') // 2025-04-28
-    });
-    // Add previous days
-    for (let i = todayDate - 1; i >= 1; i--) {
-      const day = new Date(this.today.getFullYear(),this.today.getMonth(), i);
-      this.days.push({
-        label: i.toString(),
-        value: day.toLocaleDateString('en-CA') // 2025-04-27, 2025-04-26, ...
-      });
+    if(localStorage.getItem('role')!== 'manager') {
+      this.authService.logout();
+      this.router.navigate(['/login']);
     }
+    const todayDate = this.today.getDate();
     // Set default value to today's date
     this.dateFilter = this.today.toLocaleDateString('en-CA');
     this.getByDate();
   }
 
   applyFilters() {
-    
     this.filteredAlerts = this.alerts
       .filter(alert => {
         const matchesSearch = alert.machine.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||

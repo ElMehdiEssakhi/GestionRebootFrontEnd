@@ -5,11 +5,12 @@ import { Technician } from '../models/technician';
 import { ZoneStats } from '../models/ZoneStats';
 import { Alert } from '../models/alerts.model';
 import { Machine } from '../models/machine';
+import { environment } from '../../environment/environment';
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'http://192.168.0.26:8080/';
+  private apiUrl = environment.apiUrl;
   constructor(private http: HttpClient) {}
 
 
@@ -79,6 +80,10 @@ export class ApiService {
   }
   addMachine(name: string): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}machine/add`, { name })
+      .pipe(catchError(this.handleError));
+  }
+  deleteMachine(machine: Machine): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}machine/delete`,{ body:machine })
       .pipe(catchError(this.handleError));
   }
   

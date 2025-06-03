@@ -19,22 +19,17 @@ export class NavbarComponent implements OnInit, OnDestroy {
   LogOut = LogOut;
   UserCircle = UserCircle;
   RefreshCw = RefreshCw;
-  private userSubscription: Subscription = new Subscription();
  
   constructor(private authService: AuthService, private router: Router) {
-    this.user = this.authService.getCurrentUser() || this.authService.getRole();
+    this.user = this.authService.getRole();
   }
 
   ngOnInit() {
-    this.userSubscription = this.authService.currentUser$.subscribe(user => {
-      this.user = user || this.authService.getRole();
-    });
+
   }
 
   ngOnDestroy() {
-    if (this.userSubscription) {
-      this.userSubscription.unsubscribe();
-    }
+
   }
 
   navigateToMainPage() {

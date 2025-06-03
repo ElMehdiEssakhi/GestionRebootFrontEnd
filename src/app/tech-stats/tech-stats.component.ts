@@ -1,7 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Chart, registerables } from 'chart.js';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../services/api.service';
 import { CommonModule } from '@angular/common';
@@ -29,9 +27,9 @@ export class TechStatsComponent implements OnInit, OnDestroy {
   techErrorMessage = '';
   searchTerm = '';
   showDeleteFor: number | null = null;
+  deleteTechSuccessMessage: boolean = false;
 
   constructor(
-    private http: HttpClient,
     private apiService: ApiService
   ) {
     Chart.register(...registerables);
@@ -101,6 +99,11 @@ export class TechStatsComponent implements OnInit, OnDestroy {
         this.activeTechs--;
         this.totalReboots = this.topTechnicians.reduce((sum, t) => sum + t.rebootCount, 0);
         this.showDeleteFor = null;
+        this.deleteTechSuccessMessage = true;
+        this.filteredTechs = this.topTechnicians;
+        setTimeout(() => {
+          this.deleteTechSuccessMessage = false;
+        }, 2000);
       },
       error: (err: Error) => {
         console.error('Error deleting technician:', err);

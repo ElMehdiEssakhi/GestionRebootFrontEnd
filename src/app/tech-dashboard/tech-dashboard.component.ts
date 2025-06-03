@@ -34,6 +34,10 @@ export class TechDashboardComponent {
   constructor(private authService: AuthService, private apiService: ApiService) {}
 
   ngOnInit(): void {
+    if(localStorage.getItem('role') !== 'technician') {
+      this.authService.logout();
+      window.location.href = '/login';
+    }
     this.sites = ["AGA","AHU","ESU","EUN","GLN","ERH","TTU","OUD","RAK","RBA","TNG","AGA","FEZ","CMN","VIL","OZZ","BEM","NDR"];
     this.apiService.getTechs().subscribe((data: any) => {
       this.allTechs = data.map((a: any) => a.name);
@@ -73,7 +77,6 @@ export class TechDashboardComponent {
     this.user = selectedUser;
     this.showUserDropdown = false;
     this.userSearchTerm = '';
-    this.authService.setCurrentUser(selectedUser);
   }
 
   onSiteChange() {

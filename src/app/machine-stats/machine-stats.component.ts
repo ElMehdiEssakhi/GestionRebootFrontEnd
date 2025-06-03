@@ -38,6 +38,10 @@ export class MachineStatsComponent implements OnInit, OnDestroy {
   isAddingMachine: boolean= false;
   showSuccessMessage: boolean= false;
   showErrorMessage: boolean= false;
+  ErrorMessage: string= '';
+  showDeleteFor: number | null = null;
+  deleteButton: boolean = true;
+  deleteSuccessMessage: boolean = false;
 
   constructor(
     private http: HttpClient,
@@ -110,9 +114,10 @@ export class MachineStatsComponent implements OnInit, OnDestroy {
   this.showManualChart ? this.manualZonesStats : 
   this.alerts;
 
+  
     const label = this.showAutoChart ? 'Auto Reboots' : this.showManualChart ? 'Manual Reboots': 'Alerts';
     
-    // 17 distinct colors with different opacities for auto/manual
+    // 18 distinct colors with different opacities for auto/manual
 const colors = [
   { bg: 'rgba(0, 0, 255, 1)', border: 'rgb(0, 0, 255)' },         // Blue
   { bg: 'rgba(0, 128, 0, 1)', border: 'rgb(0, 128, 0)' },         // Green
@@ -130,15 +135,15 @@ const colors = [
   { bg: 'rgba(255, 105, 180, 1)', border: 'rgb(255, 105, 180)' }, // Hot Pink
   { bg: 'rgba(220, 20, 60, 1)', border: 'rgb(220, 20, 60)' },     // Crimson
   { bg: 'rgba(34, 139, 34, 1)', border: 'rgb(34, 139, 34)' },     // Forest Green
-  { bg: 'rgba(70, 130, 180, 1)', border: 'rgb(70, 130, 180)' }    // Steel Blue
+  { bg: 'rgba(70, 130, 180, 1)', border: 'rgb(70, 130, 180)' },    // Steel Blue
+  { bg: 'rgba(0, 255, 149,1)', border: 'rgb(255, 140, 0)' } // Dark Orange
+
 ];
 
 
 
 
-    const backgroundColor = colors.map(color => 
-      this.showAutoChart ? color.bg : color.bg.replace('1', '0.8')
-    );
+    const backgroundColor = colors.map(color => color.bg); 
     const borderColor = colors.map(color => color.border);
     
     this.chart = new Chart(ctx, {
@@ -232,10 +237,35 @@ const colors = [
         console.error('Error adding machine:', err);
         this.isAddingMachine = false;
         this.showErrorMessage = true;
-        this.showErrorMessage = (err as any).error?.message || 'Failed to add machine. Please try again.';
+        this.ErrorMessage = (err as any).error?.message || 'Failed to add machine. Please try again.';
       }
 
   })
 }
+  deleteMachine(machine: Machine) {
+    this.apiService.deleteMachine(machine).subscribe({
+      next: () => {
+        this.machines = this.machines.filter(m => m.id !== machine.id);
+        this.totalMachines--;
+        this.showDeleteFor = null;
+        this.deleteButton=true;
+        this.deleteSuccessMessage = true;
+        setTimeout(() => {
+            this.deleteSuccessMessage = false;
+        }, 2000);
+        this.filteredMachines= this.machines;
+      },
+      error: (err: Error) => {
+        console.error('Error deleting technician:', err);
+        this.showErrorMessage = true;
+        this.ErrorMessage = (err as any).error?.message || 'Failed to delete technician. Please try again.';
+      }
+    });
+  }
+
+  showDeleteOption(machine: Machine) {
+    this.deleteButton = false;
+    this.showDeleteFor = machine.id;
+  }
 
 }
