@@ -18,7 +18,7 @@ export class TechDashboardComponent {
   showUserDropdown: boolean = false;
   showUserSelection: boolean = false;
   filteredUsers: string[] = [];
-  allTechs: string[] = []; // You'll populate this with your user list
+  allTechs: string[] = []; 
   alerts: any[] = [];
   filteredAlerts: any[] = [];
   isLoading = false;
@@ -39,10 +39,6 @@ export class TechDashboardComponent {
       window.location.href = '/login';
     }
     this.sites = ["AGA","AHU","ESU","EUN","GLN","ERH","TTU","OUD","RAK","RBA","TNG","AGA","FEZ","CMN","VIL","OZZ","BEM","NDR"];
-    this.apiService.getTechs().subscribe((data: any) => {
-      this.allTechs = data.map((a: any) => a.name);
-      this.filteredUsers = this.allTechs;
-    });
   }
   toggleUserSelection(alert: any) {
     if (this.selectedAlert === alert && this.showUserSelection) {
@@ -54,6 +50,8 @@ export class TechDashboardComponent {
       this.selectedAlert = alert;
       this.showUserSelection = true;
     }
+    this.user = "";
+    this.showUserDropdown = false;
   }
 
   toggleUserDropdown() {
@@ -81,6 +79,10 @@ export class TechDashboardComponent {
 
   onSiteChange() {
     this.loadAlerts();
+    this.apiService.getTechsBySite(this.siteFilter).subscribe((data: any) => {
+      this.allTechs = data.map((a: any) => a.name);
+      this.filteredUsers = this.allTechs;
+    });
   }
 
   manualReboot(alert: any) {
@@ -96,7 +98,8 @@ export class TechDashboardComponent {
       next: () => {
         this.showNotification = true;
         this.alerts = this.alerts.filter(a => a.id !== alert.id);
-          this.applyFilters();
+        this.applyFilters();
+        this.user = "";
         setTimeout(() => {
           this.showNotification = false;
         }, 1000);

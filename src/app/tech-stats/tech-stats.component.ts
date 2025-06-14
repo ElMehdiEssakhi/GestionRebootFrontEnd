@@ -21,11 +21,14 @@ export class TechStatsComponent implements OnInit, OnDestroy {
   totalReboots: number = 0;
   activeTechs: number = 0;
   newTechName = '';
+  selectedSite = '';
+  sites = ["AGA","AHU","ESU","EUN","GLN","ERH","TTU","OUD","RAK","RBA","TNG","AGA","FEZ","CMN","VIL","OZZ","BEM","NDR"]; // This will be replaced with actual sites from API
   isAddingTech = false;
   showTechSuccessMessage = false;
   showTechErrorMessage = false;
   techErrorMessage = '';
   searchTerm = '';
+  filterSite = '';
   showDeleteFor: number | null = null;
   deleteTechSuccessMessage: boolean = false;
 
@@ -55,7 +58,8 @@ export class TechStatsComponent implements OnInit, OnDestroy {
         .map((a: any) => ({
           id: a.id,
           name: a.name,
-          rebootCount: a.rebootCount
+          rebootCount: a.rebootCount,
+          site: a.site
         }))
         .sort((a: Technician, b: Technician) => b.rebootCount - a.rebootCount);
       this.isLoading = false;
@@ -64,19 +68,20 @@ export class TechStatsComponent implements OnInit, OnDestroy {
   }
 
   addTechnician() {
-    if (!this.newTechName.trim()) return;
+    if (!this.newTechName.trim() || !this.selectedSite) return;
     
     this.isAddingTech = true;
     this.showTechSuccessMessage = false;
     this.showTechErrorMessage = false;
     
-    this.apiService.addTechnician(this.newTechName).subscribe({
+    this.apiService.addTechnician(this.newTechName,this.selectedSite).subscribe({
       next: () => {
         this.isAddingTech = false;
         this.showTechSuccessMessage = true;
+        this.newTechName = '';
+        this.selectedSite = '';
         setTimeout(() => {
           this.showTechSuccessMessage = false;
-          this.newTechName = '';
         }, 2000);
       },
       error: (err: Error) => {
@@ -84,6 +89,9 @@ export class TechStatsComponent implements OnInit, OnDestroy {
         this.isAddingTech = false;
         this.showTechErrorMessage = true;
         this.techErrorMessage = (err as any).error?.message || 'Failed to add technician. Please try again.';
+        setTimeout(() => {
+          this.showTechErrorMessage = false;
+        }, 2000);
       }
     });
   }
@@ -109,17 +117,29 @@ export class TechStatsComponent implements OnInit, OnDestroy {
         console.error('Error deleting technician:', err);
         this.showTechErrorMessage = true;
         this.techErrorMessage = (err as any).error?.message || 'Failed to delete technician. Please try again.';
+        setTimeout(() => {
+          this.showTechErrorMessage = false;
+        }, 2000);
       }
     });
   }
   filterMachines() {
-    if (!this.searchTerm) {
-      this.filteredTechs = [...this.topTechnicians];
-    } else {
-      this.filteredTechs = this.topTechnicians.filter(tech =>
+    let filtered = [...this.topTechnicians];
+    
+    // Filter by search term
+    if (this.searchTerm) {
+      filtered = filtered.filter(tech =>
         tech.name.toLowerCase().includes(this.searchTerm.toLowerCase())
       );
     }
-    /*this.sortMachines();*/
+    
+    // Filter by site
+    if (this.filterSite) {
+      filtered = filtered.filter(tech =>
+        tech.site === this.filterSite
+      );
+    }
+    
+    this.filteredTechs = filtered;
   }
 }

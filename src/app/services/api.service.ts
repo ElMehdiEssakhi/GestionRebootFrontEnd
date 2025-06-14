@@ -50,14 +50,18 @@ export class ApiService {
   getTechs(){
     return this.http.get<Technician>(`${this.apiUrl}tech/getAll`);
   }
+  
+  getTechsBySite(site: string){
+    return this.http.get<Technician>(`${this.apiUrl}tech/getBySite?site=${site}`);
+  }
 
   deleteTech(tech: Technician): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}tech/delete`,{ body:tech })
       .pipe(catchError(this.handleError));
   }
 
-  addTechnician(name: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}tech/add`, { name })
+  addTechnician(name: string, site: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}tech/add`, { name, site })
       .pipe(catchError(this.handleError));
   }
   getMachines(){
